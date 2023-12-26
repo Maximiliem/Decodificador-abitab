@@ -1,15 +1,9 @@
-// Variable para almacenar la suma de montos
-let sumaMontos = 0;
-
 function dividirCadena(cadena) {
   let edificio = cadena.substring(3, 5);
   let apartamento = cadena.substring(5, 9);
   let fechaVencimiento = cadena.substring(16, 24);
-  let monto = cadena.substring(28, 33);
+  let monto = parseFloat(cadena.substring(28, 33)); // Convertir a número
   let fechaEnvio = cadena.substring(42, 48);
-
-  // Convierte el monto a un número y acumula la suma
-  sumaMontos += parseFloat(monto);
 
   return {
     edificio: edificio,
@@ -20,39 +14,80 @@ function dividirCadena(cadena) {
   };
 }
 
-function manejarEnvioFormulario(event) {
-  event.preventDefault(); // Evita que la página se recargue
+function procesarArchivos(files) {
+  let resultContainer = document.getElementById('resultContainer');
+  resultContainer.innerHTML = ''; // Limpiar resultados anteriores
 
-  let cadena = event.target.elements.cadena.value; // Obtiene la cadena del formulario
-  let resultado = dividirCadena(cadena);
+  for (let i = 0; i < files.length; i++) {
+    let file = files[i];
+    let reader = new FileReader();
 
-  // Muestra los resultados en la página web
-  document.getElementById('edificio').textContent = 'Número de edificio: ' + resultado.edificio;
-  document.getElementById('apartamento').textContent = 'Apartamento: ' + resultado.apartamento;
-  document.getElementById('fechaVencimiento').textContent = 'Fecha vencimiento: ' + resultado.fechaVencimiento;
-  document.getElementById('monto').textContent = 'Monto: ' + resultado.monto;
-  document.getElementById('fechaEnvio').textContent = 'Fecha del envío de Abitab: ' + resultado.fechaEnvio;
+    reader.onload = function (e) {
+      let content = e.target.result;
+      let codes = content.split('\n');
 
-  // Muestra la suma acumulada de montos
-  document.getElementById('sumaMontos').textContent = 'Suma acumulada de montos: ' + sumaMontos.toFixed(2);
+      let edificioData = {}; // Almacenar datos por edificio
 
-  // Vacía el campo de input después de enviar el formulario
-  event.target.elements.cadena.value = '';
-};
+      codes.forEach(code => {
+        let resultado = dividirCadena(code);
 
-function resetearValores() {
-  // Reinicia la suma de montos y borra los resultados en la página
-  sumaMontos = 0;
-  document.getElementById('edificio').textContent = '';
-  document.getElementById('apartamento').textContent = '';
-  document.getElementById('fechaVencimiento').textContent = '';
-  document.getElementById('monto').textContent = '';
-  document.getElementById('fechaEnvio').textContent = '';
-  document.getElementById('sumaMontos').textContent = '';
-};
+        // Verificar si el edificio ya está en el objeto
+        if (!edificioData.hasOwnProperty(resultado.edificio)) {
+          edificioData[resultado.edificio] = {
+            resultados: [],
+            sumaMontos: 0
+          };
+        }
 
+        // Almacenar el resultado en el objeto por edificio
+        edificioData[resultado.edificio].resultados.push(resultado);
+        edificioData[resultado.edificio].sumaMontos += resultado.monto;
+      });
 
-document.getElementById('idFormulario').addEventListener('submit', manejarEnvioFormulario);
+      // Mostrar los resultados
+      mostrarResultados(edificioData);
+    };
 
-// Agrega un event listener para el botón de reset
-document.getElementById('resetButton').addEventListener('click', resetearValores);
+    reader.readAsText(file);
+  }
+}
+
+function mostrarResultados(edificioData) {
+  let resultContainer = document.getElementById('resultContainer');
+
+  for (let edificio in edificioData) {
+    if (edificioData.hasOwnProperty(edificio)) {
+      let edificioDiv = document.createElement('div');
+      edificioDiv.innerHTML = `<h2>Edificio ${edificio}</h2>`;
+
+      edificioData[edificio].resultados.forEach(resultado => {
+        let resultString = `
+          <p>Número de edificio: ${resultado.edificio}</p>
+          <p>Apartamento: ${resultado.apartamento}</p>
+          <p>Fecha vencimiento: ${resultado.fechaVencimiento}</p>
+          <p>Monto: ${resultado.monto}</p>
+          <p>Fecha del envío de Abitab: ${resultado.fechaEnvio}</p>
+          <hr>
+        `;
+        edificioDiv.innerHTML += resultString;
+      });
+
+      // Mostrar la suma total de montos para este edificio
+      let sumaMontosString = `<p style="background-color: #FFD700;">Suma total de montos: ${edificioData[edificio].sumaMontos.toFixed(2)}</p> <hr>`;
+      edificioDiv.innerHTML += sumaMontosString;
+
+      resultContainer.appendChild(edificioDiv);
+    }
+  }
+}
+
+document.getElementById('processButton').addEventListener('click', function () {
+  let fileInput = document.getElementById('fileInput');
+  let files = fileInput.files;
+
+  if (files.length > 0) {
+    procesarArchivos(files);
+  } else {
+    alert('Por favor, seleccione al menos un archivo.');
+  }
+});
