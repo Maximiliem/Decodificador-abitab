@@ -58,11 +58,48 @@ function procesarArchivos(files) {
 
       // Mostrar los resultados
       mostrarResultados(edificioData);
+
+      // Agregar botón para exportar a Excel
+      let exportButton = document.createElement('button');
+      exportButton.innerText = 'Exportar a Excel';
+      exportButton.classList.add('btn', 'btn-primary', 'btn-md');
+      exportButton.addEventListener('click', function () {
+        exportarExcel(edificioData);
+      });
+      resultContainer.appendChild(exportButton);
+
+      // Agregar botón para exportar a PDF
+      /* let exportPdfButton = document.createElement('button');
+      exportPdfButton.innerText = 'Exportar a PDF';
+      exportPdfButton.addEventListener('click', function () {
+        exportarPDF(resultContainer);
+      }); */
+      resultContainer.appendChild(exportPdfButton);
     };
 
     reader.readAsText(file);
   }
 }
+
+function exportarExcel(edificioData) {
+  let wb = XLSX.utils.book_new();
+  let allResults = [];
+
+  for (let edificio in edificioData) {
+    if (edificioData.hasOwnProperty(edificio)) {
+      allResults = allResults.concat(edificioData[edificio].resultados);
+    }
+  }
+
+  let ws = XLSX.utils.json_to_sheet(allResults);
+  XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
+
+  // Guardar el archivo
+  XLSX.writeFile(wb, 'listado del dia.xlsx');
+}
+
+
+
 
 function mostrarResultados(edificioData) {
   let resultContainer = document.getElementById('resultContainer');
