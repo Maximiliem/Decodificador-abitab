@@ -2,3 +2,7 @@ h1 {
     background-color: rgb(10, 126, 228);
     color: white;
 };
+
+#divContent {
+    justify-content: center;
+}
