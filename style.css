@@ -1,8 +1,15 @@
-h1 {
-    background-color: rgb(10, 126, 228);
-    color: white;
-};
-
-#divContent {
-    justify-content: center;
+#portada, #exportar {
+  display: flex;
+  min-height: 95vh;
 }
+
+.card {
+  border-radius: 20px;
+  overflow: hidden;
+}
+.card .card-header {
+  background-color: #007bff;
+}
+.card .card-header h1 {
+  color: #fff;
+}/*# sourceMappingURL=style.css.map */

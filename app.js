@@ -1,22 +1,26 @@
 function dividirCadena(cadena) {
+  if (!cadena || cadena.length < 48) {
+    return null; // Manejar casos donde la cadena no cumple con la longitud mínima
+  }
+
   let edificio = cadena.substring(3, 5);
   let apartamento = cadena.substring(5, 9);
   let fechaVencimiento = cadena.substring(16, 24);
-  let monto = parseFloat(cadena.substring(28, 33)); // Convertir a número
+  let monto = parseFloat(cadena.substring(28, 33)) || 0; // Convertir a número y manejar NaN
   let fechaEnvio = cadena.substring(42, 48);
 
   return {
-    edificio: edificio,
-    apartamento: apartamento,
-    fechaVencimiento: fechaVencimiento,
-    monto: monto,
-    fechaEnvio: fechaEnvio
+    edificio,
+    apartamento,
+    fechaVencimiento,
+    monto,
+    fechaEnvio,
   };
 }
 
 function procesarArchivos(files) {
-  let resultContainer = document.getElementById('resultContainer');
-  resultContainer.innerHTML = ''; // Limpiar resultados anteriores
+  let resultContainer = document.getElementById("resultContainer");
+  resultContainer.innerHTML = ""; // Limpiar resultados anteriores
 
   for (let i = 0; i < files.length; i++) {
     let file = files[i];
@@ -24,20 +28,20 @@ function procesarArchivos(files) {
 
     reader.onload = function (e) {
       let content = e.target.result;
-      let codes = content.split('\n');
+      let codes = content.split("\n");
 
       let edificioData = {}; // Almacenar datos por edificio
 
-      codes.forEach(code => {
+      codes.forEach((code) => {
         let resultado = dividirCadena(code);
+        if (!resultado) return; // Ignorar cadenas inválidas
 
-        // Verificar si el edificio ya está en el objeto
-        if (!edificioData.hasOwnProperty(resultado.edificio)) {
+        if (!edificioData[resultado.edificio]) {
           edificioData[resultado.edificio] = {
             resultados: [],
             sumaMontos: 0,
             cantidadPagos: 0,
-            fechas: new Set()
+            fechas: new Set(),
           };
         }
 
@@ -50,96 +54,96 @@ function procesarArchivos(files) {
       });
 
       // Calcular la cantidad de pagos para cada edificio
-      for (let edificio in edificioData) {
-        if (edificioData.hasOwnProperty(edificio)) {
-          edificioData[edificio].cantidadPagos = edificioData[edificio].resultados.length;
-        }
-      }
+      Object.keys(edificioData).forEach((edificio) => {
+        edificioData[edificio].cantidadPagos =
+          edificioData[edificio].resultados.length;
+      });
 
       // Mostrar los resultados
       mostrarResultados(edificioData);
 
       // Agregar botón para exportar a Excel
-      let exportButton = document.createElement('button');
-      exportButton.innerText = 'Exportar a Excel';
-      exportButton.classList.add('btn', 'btn-primary', 'btn-md');
-      exportButton.addEventListener('click', function () {
+      let exportButton = document.createElement("button");
+      exportButton.innerText = "Exportar a Excel";
+      exportButton.classList.add("btn", "btn-primary", "btn-md");
+      exportButton.addEventListener("click", function () {
         exportarExcel(edificioData);
       });
       resultContainer.appendChild(exportButton);
-
-      // Agregar botón para exportar a PDF
-      /* let exportPdfButton = document.createElement('button');
-      exportPdfButton.innerText = 'Exportar a PDF';
-      exportPdfButton.addEventListener('click', function () {
-        exportarPDF(resultContainer);
-      }); */
-      resultContainer.appendChild(exportPdfButton);
     };
 
     reader.readAsText(file);
   }
+  sessionStorage.setItem("edificioData", JSON.stringify(edificioData));
 }
 
 function exportarExcel(edificioData) {
-  let wb = XLSX.utils.book_new();
-  let allResults = [];
+  let wb = XLSX.utils.book_new(); // Crear un nuevo libro de Excel
 
-  for (let edificio in edificioData) {
-    if (edificioData.hasOwnProperty(edificio)) {
-      allResults = allResults.concat(edificioData[edificio].resultados);
-    }
-  }
+  // Recorremos los edificios y creamos una hoja para cada edificio
+  Object.keys(edificioData).forEach((edificio) => {
+    let edificioResultados = edificioData[edificio].resultados.map(
+      (resultado) => {
+        return {
+          Edificio: resultado.edificio,
+          Apartamento: resultado.apartamento,
+          "Fecha Vencimiento": resultado.fechaVencimiento,
+          Monto: resultado.monto.toFixed(2),
+          "Fecha Envío": resultado.fechaEnvio,
+        };
+      }
+    );
 
-  let ws = XLSX.utils.json_to_sheet(allResults);
-  XLSX.utils.book_append_sheet(wb, ws, 'Resultados');
+    // Crear una hoja de Excel a partir de los datos de cada edificio
+    let ws = XLSX.utils.json_to_sheet(edificioResultados);
+    XLSX.utils.book_append_sheet(wb, ws, `Edificio ${edificio}`); // Agregar la hoja al libro
+  });
 
   // Guardar el archivo
-  XLSX.writeFile(wb, 'listado del dia.xlsx');
+  XLSX.writeFile(wb, "listado_del_dia.xlsx");
 }
-
-
-
 
 function mostrarResultados(edificioData) {
-  let resultContainer = document.getElementById('resultContainer');
+  let resultContainer = document.getElementById("resultContainer");
 
-  for (let edificio in edificioData) {
-    if (edificioData.hasOwnProperty(edificio)) {
-      let edificioDiv = document.createElement('div');
-      edificioDiv.innerHTML = `<hr> <h2>Edificio ${edificio}</h2>`;
+  Object.keys(edificioData).forEach((edificio) => {
+    let edificioDiv = document.createElement("div");
+    edificioDiv.innerHTML = `<hr> <h2>Edificio ${edificio}</h2>`;
 
-      edificioData[edificio].resultados.forEach(resultado => {
-        let resultString = `
-          <p>Número de edificio: ${resultado.edificio}</p>
-          <p>Apartamento: ${resultado.apartamento}</p>
-          <p>Fecha vencimiento: ${resultado.fechaVencimiento}</p>
-          <p>Monto: ${resultado.monto}</p>
-          <p>Fecha del envío de Abitab: ${resultado.fechaEnvio}</p>
-          <hr>
-        `;
-        edificioDiv.innerHTML += resultString;
-      });
-
-      // Mostrar la cantidad de pagos y la suma total de montos para este edificio
-      let infoString = `
-        <p style="background-color: #c2e0ed;">Cantidad de pagos: ${edificioData[edificio].cantidadPagos}</p>
-        <p style="background-color: #FFD700;">Suma total de montos: ${edificioData[edificio].sumaMontos.toFixed(2)}</p>
+    edificioData[edificio].resultados.forEach((resultado) => {
+      let resultString = `
+        <p>Número de edificio: ${resultado.edificio}</p>
+        <p>Apartamento: ${resultado.apartamento}</p>
+        <p>Fecha vencimiento: ${resultado.fechaVencimiento}</p>
+        <p>Monto: ${resultado.monto.toFixed(2)}</p>
+        <p>Fecha del envío de Abitab: ${resultado.fechaEnvio}</p>
+        <hr>
       `;
-      edificioDiv.innerHTML += infoString;
+      edificioDiv.innerHTML += resultString;
+    });
 
-      resultContainer.appendChild(edificioDiv);
-    }
-  }
+    // Mostrar la cantidad de pagos y la suma total de montos para este edificio
+    let infoString = `
+      <p style="background-color: #c2e0ed;">Cantidad de pagos: ${
+        edificioData[edificio].cantidadPagos
+      }</p>
+      <p style="background-color: #FFD700;">Suma total de montos: ${edificioData[
+        edificio
+      ].sumaMontos.toFixed(2)}</p>
+    `;
+    edificioDiv.innerHTML += infoString;
+
+    resultContainer.appendChild(edificioDiv);
+  });
 }
 
-document.getElementById('processButton').addEventListener('click', function () {
-  let fileInput = document.getElementById('fileInput');
+document.getElementById("processButton").addEventListener("click", function () {
+  let fileInput = document.getElementById("fileInput");
   let files = fileInput.files;
 
   if (files.length > 0) {
     procesarArchivos(files);
   } else {
-    alert('Por favor, seleccione al menos un archivo.');
+    alert("Por favor, seleccione al menos un archivo.");
   }
 });

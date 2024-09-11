@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Exportar Resultados">
+  <meta name="keywords" content="Abitab, Exportar, Resultados, Excel">
+  <link rel="shortcut icon" href="abitab.jpeg" type="image/x-icon">
+  
+  <!-- CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"  integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.17.0/dist/xlsx.full.min.js"></script>
+
+  <title>Exportar a Excel</title>
+
+</head>
+
+<body>
+  <section id="exportar">
+    <div class="container-fluid my-auto">
+      <div class="row">
+        <div class="col-xl-8 mx-auto">
+          <div class="card shadow">
+            <div class="card-header">
+              <h1 class="text-center">Exportar Resultados a Excel</h1>
+            </div>
+            <div class="card-body text-center">
+                <button class="btn btn-success btn-lg" id="exportButton">Exportar a Excel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p class="text-center">&copy; 2023 - Web desarrollada por Maximiliem & M.Alvez</p>
+  </footer>
+  
+  <script type="text/javascript">
+    document.getElementById("exportButton").addEventListener("click", function () {
+      let edificioData = JSON.parse(sessionStorage.getItem('edificioData')); // Cargar los datos de la sesión
+      exportarExcel(edificioData); // Llamar a la función de exportar
+    });
+
+    function exportarExcel(edificioData) {
+      let wb = XLSX.utils.book_new(); 
+
+      Object.keys(edificioData).forEach((edificio) => {
+        let edificioResultados = edificioData[edificio].resultados.map((resultado) => {
+          return {
+            Edificio: resultado.edificio,
+            Apartamento: resultado.apartamento,
+            "Fecha Vencimiento": resultado.fechaVencimiento,
+            Monto: resultado.monto.toFixed(2),
+            "Fecha Envío": resultado.fechaEnvio,
+          };
+        });
+
+        let ws = XLSX.utils.json_to_sheet(edificioResultados);
+        XLSX.utils.book_append_sheet(wb, ws, `Edificio ${edificio}`);
+      });
+
+      XLSX.writeFile(wb, "listado_del_dia.xlsx");
+    }
+  </script>
+</body>
+
+</html>
