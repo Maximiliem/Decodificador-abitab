@@ -1,0 +1,24 @@
+
+//Variables de color
+$blanco: #fff;
+$azul: #007bff;
+
+#portada, #exportar{
+    display: flex;
+    min-height: 95vh;
+}
+
+.card{
+    border-radius: 20px;
+    overflow: hidden;
+
+    .card-header{
+        background-color: $azul;
+
+
+        h1 {
+            color: $blanco;
+        }
+
+    }
+}
